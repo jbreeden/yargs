@@ -1,10 +1,5 @@
-# yargs
-Dead simple argument parser for ruby
-
-So simple, it is the README
-
-```Ruby
-# Simple argument parser for Ruby.
+# Dead simple argument parser for ruby.
+# So simple, it is the README.
 #
 # Description:
 #
@@ -71,4 +66,3 @@ class Yargs
     return nil
   end
 end
-```
