@@ -1,5 +1,4 @@
-# Dead simple argument parser for ruby.
-# So simple, it is the README.
+# Minimalist argument parser for ruby.
 #
 # Description:
 #
