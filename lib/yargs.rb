@@ -22,7 +22,7 @@
 # start_interval = yargs.value(:i, :interval)
 # do_something if start_interval != nil
 #
-# # Since we're consuming, we could check for interval again
+# # We could check for interval again
 # # (In RL, I'd give them different names, but you get the idea)
 # end_interval = yargs.value(:i, :interval)
 # do_something if end_interval != nil
@@ -30,31 +30,14 @@
 
 require 'yargs/version'
 
-# # Maybe?
-#
-# options = Yargs.parse {
-#   flag :h, :help {
-#
-#   }
-#
-#   value :h, :host { |host|
-#
-#   }
-# }
-
 class Yargs
+
+  attr_reader :argv, :remaining
+    
   # mode argument is deprecated & unused
   def initialize(argv, mode=nil)
     @argv = argv.dup
     @remaining = @argv.dup
-  end
-
-  def argv
-    @argv
-  end
-
-  def remaining
-    @remaining
   end
 
   # Was the flag (option with no value) provided?
@@ -79,6 +62,7 @@ class Yargs
   #        yargs = Yargs.new(%w[--last-arg])
   #        yargs.value('last-arg') #=> nil
   #        yargs.flag('last-arg') #=> true
+  # Returns the provided value in all other cases.
   def value(*names)
     name_regex = "(?:#{names.join('|')})"
 
