@@ -54,6 +54,7 @@ class Yargs
     
     names_alt = "(?:#{names.join('|')})"
     @remaining.dup.each do |arg|
+      # TODO: This regex template should be overridable (maximal flexibility and all).
       if /^(-){1,2}#{names_alt}$/ === arg
         @remaining.delete(arg)
         result = true
