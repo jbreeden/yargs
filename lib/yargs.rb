@@ -1,36 +1,43 @@
-# Simple argument parser for Ruby.
-#
-# Description:
-#
-# - Does NOT bark about unexpected arguments. That's your problem.
-# - Always checks for the first value of the flag/value from left to right.
-# - Can check for the same flag/value multiple times.
-# - Flags & values may be prefixed with '-' or '--', no matter the name
-# - Values can be separated by their field name by whitespace OR an '=' sign, but not both
-# - Does not modify the argv passed in.
-#
-# Usage:
-#
-# ```Ruby
-# yargs = Yargs.new(ARGV)
-#
-# # Check a flag [ie: an arg prefixed with '-' or '--', that has no value]
-# flag_given = yargs.flag(:f, :fetch)
-# do_something if flag_given
-#
-# # Get a value [ie: an arg prefixed with '-' or '--' followed by (spaces OR an '=') and the value ]
-# start_interval = yargs.value(:i, :interval)
-# do_something if start_interval != nil
-#
-# # We could check for interval again
-# # (In RL, I'd give them different names, but you get the idea)
-# end_interval = yargs.value(:i, :interval)
-# do_something if end_interval != nil
-# ```
+=begin
+Simple argument parser for Ruby.
+
+ Description:
+
+- Does NOT bark about unexpected arguments. That's your problem.
+- Always checks for the first value of the flag/value from left to right.
+- Can check for the same flag/value multiple times.
+- Flags & values may be prefixed with '-' or '--', no matter the name
+- Values can be separated by their field name by whitespace OR an '=' sign, but not both
+- Does not modify the argv passed in.
+
+Usage:
+
+```Ruby
+yargs = Yargs.new(ARGV)
+
+# Check a flag [ie: an arg prefixed with '-' or '--', that has no value]
+flag_given = yargs.flag(:f, :fetch)
+do_something if flag_given
+
+# Get a value [ie: an arg prefixed with '-' or '--' followed by (spaces OR an '=') and the value ]
+start_interval = yargs.value(:i, :interval)
+do_something if start_interval != nil
+
+# We could check for interval again
+# (In RL, I'd give them different names, but you get the idea)
+end_interval = yargs.value(:i, :interval)
+do_something if end_interval != nil
+```
+=end
 
 require 'yargs/version'
 
 class Yargs
+  
+  def self.parse(*args, &block)
+    yargs = self.new(*args)
+    yargs.parse(&block)
+  end
 
   attr_reader :argv, :remaining
     
@@ -38,22 +45,30 @@ class Yargs
   def initialize(argv, mode=nil)
     @argv = argv.dup
     @remaining = @argv.dup
+    @hit_counts = Hash.new { |h, k| h[k] = 0 }
   end
 
-  # Was the flag (option with no value) provided?
+  # Returns or yields true if a flag was provided with any of the given names.
   def flag(*names)
+    result = false
+    
     names_alt = "(?:#{names.join('|')})"
     @remaining.dup.each do |arg|
       if /^(-){1,2}#{names_alt}$/ === arg
         @remaining.delete(arg)
-        return true
+        result = true
       end
     end
-    return false
+    
+    if block_given? && result
+      yield result 
+    else
+      return result
+    end
   end
   alias flag? flag
 
-  # What value was provided for this option?
+  # Returns or yields the value given by the provided names.
   # Returns an empty string (indicating a provided option with no value) if
   #   - The option is provided with an equal sign but no value: `--value=`
   # Returns nil (indicating that the option wasn't provided, or looked like a flag) if
@@ -64,22 +79,49 @@ class Yargs
   #        yargs.flag('last-arg') #=> true
   # Returns the provided value in all other cases.
   def value(*names)
+    result = nil
     name_regex = "(?:#{names.join('|')})"
 
     @remaining.dup.each_with_index do |arg, index|
       if /^(?:-{1,2})(?:#{name_regex})(=?)(.*)/ === arg
         if !$1.empty?
           @remaining.delete_at(index)
-          return $2
+          result = $2
         elsif (index + 1) < @remaining.length
           val =  @remaining[index + 1]
           @remaining.delete_at(index + 1)
           @remaining.delete_at(index)
-          return val
+          result = val
         end
       end
     end
 
-    return nil
+    if block_given? && result
+      yield result
+    else
+      return result
+    end
+  end
+  
+  # Removes the token, and everything after from the remaining argv.
+  # Everything that followed the token is returned in an array.
+  def everything_after(token)
+    post = []
+    in_post = false
+    remaining.dup.each_with_index { |arg, i|
+      if in_post
+        post.push(arg)
+        remaining.delete_at(i)
+      elsif token === arg
+        in_post = true
+        remaining.delete_at(i)
+      end
+    }
+    post
+  end
+  
+  # Reader friendly way to call instance_eval.
+  def parse(&block)
+     self.instance_eval(&block) 
   end
 end
