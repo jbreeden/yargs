@@ -109,15 +109,11 @@ class Yargs
   def everything_after(token)
     post = []
     in_post = false
-    remaining.dup.each_with_index { |arg, i|
-      if in_post
-        post.push(arg)
-        remaining.delete_at(i)
-      elsif token === arg
-        in_post = true
-        remaining.delete_at(i)
-      end
-    }
+    
+    index = remaining.index(token)
+    return post unless index
+    post.unshift remaining.pop until remaining.length == index + 1
+    remaining.pop # remove the token itself
     post
   end
   
