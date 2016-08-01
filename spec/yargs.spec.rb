@@ -28,6 +28,11 @@ describe "Yargs" do
         fail("Flags should be consumed when read")
       end
     end
+    
+    it "Doesn't match another flag with a common prefix" do
+      yargs = Yargs.new(%w[--test])
+      fail('Matched by prefix') if yargs.flag?('t')
+    end
   end
   
   describe "#value" do
@@ -61,6 +66,14 @@ describe "Yargs" do
       unless yargs.value('values-are-consumed') == '1' && !yargs.flag('values-are-consumed')
         fail("Flags should be consumed when read")
       end
+    end
+    
+    it "Doesn't match another value with a common prefix" do
+      yargs = Yargs.new(%w[--test ing])
+      fail('Matched by prefix') if yargs.value('t')
+      
+      yargs = Yargs.new(%w[--test=ing])
+      fail('Matched by prefix') if yargs.value('t')
     end
   end
   

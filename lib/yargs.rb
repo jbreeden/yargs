@@ -84,7 +84,7 @@ class Yargs
     name_regex = "(?:#{names.join('|')})"
 
     @remaining.dup.each_with_index do |arg, index|
-      if /^(?:-{1,2})(?:#{name_regex})(=?)(.*)/ === arg
+      if /^(?:-{1,2})#{name_regex}(=|\z)(.*)/ === arg
         if !$1.empty?
           @remaining.delete_at(index)
           result = $2
