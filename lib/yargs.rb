@@ -16,16 +16,17 @@ Usage:
 yargs = Yargs.new(ARGV)
 
 # Check a flag [ie: an arg prefixed with '-' or '--', that has no value]
-flag_given = yargs.flag(:f, :fetch)
+flag_given = yargs.flag?(:f, :fetch)
 do_something if flag_given
 
-# Get a value [ie: an arg prefixed with '-' or '--' followed by (spaces OR an '=') and the value ]
-start_interval = yargs.value(:i, :interval)
+# Get the value provided for a given option, or nil.
+# [ie: an arg prefixed with '-' or '--' followed by spaces OR an '=' and the value ]
+start_interval = yargs.option(:i, :interval)
 do_something if start_interval != nil
 
 # We could check for interval again
 # (In RL, I'd give them different names, but you get the idea)
-end_interval = yargs.value(:i, :interval)
+end_interval = yargs.option(:i, :interval)
 do_something if end_interval != nil
 ```
 =end
@@ -33,14 +34,32 @@ do_something if end_interval != nil
 require 'yargs/version'
 
 class Yargs
-  
+
   def self.parse(*args, &block)
     yargs = self.new(*args)
     yargs.parse(&block)
   end
 
+  # Set the usage message to print when called `Yargs.help`
+  def self.usage(str)
+    @usage = str
+  end
+  class << self
+    alias usage= usage
+  end
+
+  # Prints the usage message given to `Yargs.usage`
+  # then exits with the exit status given as the only (optional)
+  # param. The default status is 0. The usage message is printed
+  # to stdout if the status is 0, otherwise it is printed to stderr.
+  def self.help(status=0)
+    file = status == 0 ? $stdout : $stderr
+    file.puts(@usage || "TODO: No help text defined")
+    exit status
+  end
+
   attr_reader :argv, :remaining
-    
+
   # mode argument is deprecated & unused
   def initialize(argv, mode=nil)
     @argv = argv.dup
@@ -51,25 +70,24 @@ class Yargs
   # Returns or yields true if a flag was provided with any of the given names.
   def flag(*names)
     result = false
-    
+
     names_alt = "(?:#{names.join('|')})"
     @remaining.dup.each do |arg|
-      # TODO: This regex template should be overridable (maximal flexibility and all).
       if /^(-){1,2}#{names_alt}$/ === arg
         @remaining.delete(arg)
         result = true
       end
     end
-    
+
     if block_given? && result
-      yield result 
+      yield result
     else
       return result
     end
   end
   alias flag? flag
 
-  # Returns or yields the value given by the provided names.
+  # Returns or yields the value provided for the option with the given aliases.
   # Returns an empty string (indicating a provided option with no value) if
   #   - The option is provided with an equal sign but no value: `--value=`
   # Returns nil (indicating that the option wasn't provided, or looked like a flag) if
@@ -79,12 +97,12 @@ class Yargs
   #        yargs.value('last-arg') #=> nil
   #        yargs.flag('last-arg') #=> true
   # Returns the provided value in all other cases.
-  def value(*names)
+  def option(*aliases)
     result = nil
-    name_regex = "(?:#{names.join('|')})"
+    aliases_pattern = "(?:#{aliases.join('|')})"
 
     @remaining.dup.each_with_index do |arg, index|
-      if /^(?:-{1,2})#{name_regex}(=|\z)(.*)/ === arg
+      if /^(?:-{1,2})#{aliases_pattern}(=|\z)(.*)/ === arg
         if !$1.empty?
           @remaining.delete_at(index)
           result = $2
@@ -103,22 +121,23 @@ class Yargs
       return result
     end
   end
-  
+  alias value option
+
   # Removes the token, and everything after from the remaining argv.
   # Everything that followed the token is returned in an array.
   def everything_after(token)
     post = []
     in_post = false
-    
+
     index = remaining.index(token)
     return post unless index
     post.unshift remaining.pop until remaining.length == index + 1
     remaining.pop # remove the token itself
     post
   end
-  
+
   # Reader friendly way to call instance_eval.
   def parse(&block)
-     self.instance_eval(&block) 
+     self.instance_eval(&block)
   end
 end

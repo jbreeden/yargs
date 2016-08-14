@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    yargs (0.1.0)
+    yargs (1.0.0.pre)
 
 GEM
   remote: https://rubygems.org/
